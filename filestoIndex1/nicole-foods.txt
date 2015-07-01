@@ -1,0 +1,7 @@
+package org.apache.lucene.queryParser;
+IndexWriter writer = new IndexWriter(indexDirectory, new StandardAnalyzer(Version.LUCENE_30), true,MaxFieldLength.UNLIMITED);
+Document document = new Document();
+document.add(new Field('id', '1', Store.YES, Index.NOT_ANALYZED));
+document.add(new Field('name', 'user1', Store.YES, Index.NOT_ANALYZED));
+document.add(new Field('age', '20', Store.YES, Index.NOT_ANALYZED));
+writer.addDocument(document);
