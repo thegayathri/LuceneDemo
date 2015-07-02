@@ -3,6 +3,7 @@ package org.apache.lucene.queryParser;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.LongField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
@@ -25,11 +26,9 @@ public class IndexWrite {
     private static String mIndexPath;
 
 	public static void main(String[] args) throws Exception {
-
         getArgs(args);
-
         ResultSet resultSet = getDBResults(mTableName, null);
-        mColumnNames = getColumnNames(resultSet);
+        indexResults(resultSet);
     }
 
     private static void getArgs(String[] args) {
@@ -98,18 +97,21 @@ public class IndexWrite {
         IndexWriter writer = null;
         try {
             writer = new IndexWriter(FSDirectory.open(Paths.get(mIndexPath)), config);
-            while (result.next()) {
+            while (resultSet.next()) {
                 Document document = new Document();
                 //add the fields to the index as you required
-
-                document.add(new StringField(INDEX_KEY_NAME, result.getString(DB_KEY_NAME), Field.Store.YES));
-                document.add(new StringField(INDEX_KEY_CHARAC, result.getString(DB_KEY_CHARAC), Field.Store.YES));
-                document.add(new StringField(INDEX_KEY_AGE, result.getString(DB_KEY_AGE), Field.Store.YES));
+                document.add(new LongField("id", resultSet.getInt("id"), Field.Store.NO));
+                document.add(new StringField("name", resultSet.getString("name"), Field.Store.YES));
+                document.add(new StringField("title", resultSet.getString("title"), Field.Store.YES));
+                document.add(new StringField("status", resultSet.getString("status"), Field.Store.YES));
+                document.add(new LongField("age", resultSet.getLong("age"), Field.Store.YES));
                 //create the index files
-                writer.updateDocument(new Term(INDEX_KEY_NAME, result.getString(DB_KEY_NAME)), document);
+                writer.updateDocument(new Term("name", resultSet.getString("name")), document);
             }
             writer.close();
         } catch (IOException e) {
+            e.printStackTrace();
+        } catch (SQLException e) {
             e.printStackTrace();
         }
     }
