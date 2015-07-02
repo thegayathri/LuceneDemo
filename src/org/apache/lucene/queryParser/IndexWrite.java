@@ -1,12 +1,5 @@
 package org.apache.lucene.queryParser;
 
-import java.io.File;
-import java.nio.file.Paths;
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.ResultSet;
-import java.sql.Statement;
-
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -15,39 +8,109 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.FSDirectory;
-import org.apache.lucene.util.Version;
+
+import java.io.IOException;
+import java.nio.file.Paths;
+import java.sql.*;
+import java.util.ArrayList;
+import java.util.List;
 
 public class IndexWrite {
-	private static final String INDEX_KEY_NAME = "name";
-	private static final String INDEX_KEY_CHARAC = "charac";
-	private static final String INDEX_KEY_AGE = "age";
-	private static final String DB_KEY_NAME = "name";
-	private static final String DB_KEY_CHARAC = "charac";
-	private static final String DB_KEY_AGE = "age";
+    private static final String DB_CLASS_NAME = "com.mysql.jdbc.Driver";
+    private static final String DB_URL = "jdbc:mysql://localhost:5555/lannister";
+    private static final String DB_USER_NAME = "root";
+    private static final String DB_PASSWORD = "kalilinux";
+    private static List<String> mColumnNames;
+    private static String mTableName;
+    private static String mIndexPath;
 
 	public static void main(String[] args) throws Exception {
-        //create a file which will hold the index files.make sur the path is correct
-        String index = "index";
-        //establish the mysql connection
-        Class.forName("com.mysql.jdbc.Driver").newInstance();
-        Connection connection = DriverManager.getConnection("jdbc:mysql://localhost:5555/lannister", "root", "root");
+
+        getArgs(args);
+
+        ResultSet resultSet = getDBResults(mTableName, null);
+        mColumnNames = getColumnNames(resultSet);
+    }
+
+    private static void getArgs(String[] args) {
+        mTableName = "house";
+        mIndexPath = "index";
+        for(int i=0;i<args.length;i++) {
+            if("-table".equals(args[i])) {
+                mTableName = args[i+1];
+            } else if("-index".equals(args[i])) {
+                mIndexPath = args[i+1];
+            }
+        }
+    }
+
+    /**
+     * Gives the column names from a result set
+     * @param resultSet
+     * @return list of column names present in the result set
+     */
+    private static List<String> getColumnNames(ResultSet resultSet) {
+        List<String> columnNames = new ArrayList<String>();
+        try {
+            ResultSetMetaData resultSetMetaData = resultSet.getMetaData();
+            for(int i=0;i<resultSetMetaData.getColumnCount();i++) {
+                columnNames.add(resultSetMetaData.getColumnName(i+1));
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    /**
+     * Queries the given table and returns the result. If no query is given returns the entire table
+     * @param query Query that has to be executed on the given table
+     * @return ResultSet corresponding to the query
+     */
+    private static ResultSet getDBResults(String tableName, String query) {
+        if(query==null) {
+            query = "SELECT * FROM " + tableName;
+        }
+        try {
+            Class.forName(DB_CLASS_NAME).newInstance();
+            Connection connection = DriverManager.getConnection(DB_URL, DB_USER_NAME, DB_PASSWORD);
+            Statement statement = connection.createStatement();
+            return statement.executeQuery(query);
+        } catch (InstantiationException e) {
+            e.printStackTrace();
+        } catch (IllegalAccessException e) {
+            e.printStackTrace();
+        } catch (ClassNotFoundException e) {
+            e.printStackTrace();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    /**
+     * Create index files according to the results set from the database
+     * @param resultSet Results from the database query
+     */
+    private static void indexResults(ResultSet resultSet) {
         StandardAnalyzer analyzer = new StandardAnalyzer();
         IndexWriterConfig config = new IndexWriterConfig(analyzer);
-        IndexWriter writer = new IndexWriter(FSDirectory.open(Paths.get(index)), config);
-        String query = "select * from house";
-        Statement statement = connection.createStatement();
-        ResultSet result = statement.executeQuery(query);
-        //according to the results create the index files
-        while (result.next()) {
-            Document document = new Document();
-        //add the fields to the index as you required
-            document.add(new StringField(INDEX_KEY_NAME, result.getString(DB_KEY_NAME), Field.Store.YES));
-            document.add(new StringField(INDEX_KEY_CHARAC, result.getString(DB_KEY_CHARAC), Field.Store.YES));
-            document.add(new StringField(INDEX_KEY_AGE, result.getString(DB_KEY_AGE), Field.Store.YES));
-           //create the index files
-            writer.updateDocument(new Term(INDEX_KEY_NAME, result.getString(DB_KEY_NAME)), document);
+        IndexWriter writer = null;
+        try {
+            writer = new IndexWriter(FSDirectory.open(Paths.get(mIndexPath)), config);
+            while (result.next()) {
+                Document document = new Document();
+                //add the fields to the index as you required
+
+                document.add(new StringField(INDEX_KEY_NAME, result.getString(DB_KEY_NAME), Field.Store.YES));
+                document.add(new StringField(INDEX_KEY_CHARAC, result.getString(DB_KEY_CHARAC), Field.Store.YES));
+                document.add(new StringField(INDEX_KEY_AGE, result.getString(DB_KEY_AGE), Field.Store.YES));
+                //create the index files
+                writer.updateDocument(new Term(INDEX_KEY_NAME, result.getString(DB_KEY_NAME)), document);
+            }
+            writer.close();
+        } catch (IOException e) {
+            e.printStackTrace();
         }
-        writer.close();
     }
-	
 }

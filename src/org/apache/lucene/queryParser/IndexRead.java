@@ -19,6 +19,7 @@ import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.util.Version;
 
 public class IndexRead {
+
     public static void main(String[] arg) throws IOException, ParseException{
        // the text you want to search
         String query = "jamie";
