@@ -18,21 +18,24 @@ import java.util.List;
 
 public class IndexWrite {
     private static final String DB_CLASS_NAME = "com.mysql.jdbc.Driver";
-    private static final String DB_URL = "jdbc:mysql://localhost:5555/lannister";
+    private static final String DB_URL = "jdbc:mysql://localhost:3306/houses";
     private static final String DB_USER_NAME = "root";
-    private static final String DB_PASSWORD = "kalilinux";
-    private static List<String> mColumnNames;
+    private static final String DB_PASSWORD = "gameofthrones";
     private static String mTableName;
     private static String mIndexPath;
 
 	public static void main(String[] args) throws Exception {
         getArgs(args);
         ResultSet resultSet = getDBResults(mTableName, null);
+        if(resultSet==null) {
+            System.err.println("Result is null.");
+            System.exit(1);
+        }
         indexResults(resultSet);
     }
 
     private static void getArgs(String[] args) {
-        mTableName = "house";
+        mTableName = "lannister";
         mIndexPath = "index";
         for(int i=0;i<args.length;i++) {
             if("-table".equals(args[i])) {
@@ -100,15 +103,16 @@ public class IndexWrite {
             while (resultSet.next()) {
                 Document document = new Document();
                 //add the fields to the index as you required
-                document.add(new LongField("id", resultSet.getInt("id"), Field.Store.NO));
+                document.add(new LongField("id", resultSet.getInt("id"), Field.Store.YES));
                 document.add(new StringField("name", resultSet.getString("name"), Field.Store.YES));
                 document.add(new StringField("title", resultSet.getString("title"), Field.Store.YES));
                 document.add(new StringField("status", resultSet.getString("status"), Field.Store.YES));
                 document.add(new LongField("age", resultSet.getLong("age"), Field.Store.YES));
                 //create the index files
-                writer.updateDocument(new Term("name", resultSet.getString("name")), document);
+                writer.updateDocument(new Term("id", String.valueOf(resultSet.getLong("id"))), document);
             }
             writer.close();
+            System.out.println("Database is indexed successfully!!");
         } catch (IOException e) {
             e.printStackTrace();
         } catch (SQLException e) {
