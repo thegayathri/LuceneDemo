@@ -8,7 +8,7 @@ public class DatabaseTest {
 	
 	public static void main(String args[]) throws InstantiationException, IllegalAccessException, ClassNotFoundException, SQLException {
 		Class.forName("com.mysql.jdbc.Driver").newInstance();
-        Connection connection = DriverManager.getConnection("jdbc:mysql://localhost:3306/houses", "root", "kalilinux");
+        Connection connection = DriverManager.getConnection("jdbc:mysql://localhost:3306/houses", "root", "gameofthrones");
         String sqlQuery = "select * from lannister";
         Statement stmt = connection.createStatement();
         ResultSet rs = stmt.executeQuery(sqlQuery);
@@ -20,9 +20,7 @@ public class DatabaseTest {
             System.out.println(resultSetMetaData.getColumnName(i+1));
         }
         while(rs.next()) {
-
         	System.out.println(rs.getString("name"));
-        	System.out.println(rs.getString("charac"));
         	System.out.println(rs.getString("age"));
         }
 	}
